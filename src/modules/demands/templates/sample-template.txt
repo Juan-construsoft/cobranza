@@ -1,0 +1,16 @@
+ID del Caso: {{id_caso}}
+Nombre del Deudor: {{nombre_deudor}}
+Tipo de Identificación: {{tipo_identificacion}}
+Número de Identificación: {{numero_identificacion}}
+Dirección: {{direccion}}
+Teléfonos: {{telefonos}}
+Correos: {{correos}}
+Nombre Acreedor: {{nombre_acreedor}}
+Número de Obligación: {{numero_obligacion}}
+Valor Adeudado: {{valor_adeudado}}
+Tipo de Garantía: {{tipo_garantia}}
+Abogado Responsable: {{abogado_responsable}}
+Fecha Vencimiento Original: {{fecha_vencimiento}}
+Fecha Inicio Mora: {{fecha_inicio_mora}}
+
+Comentarios: {{comentarios}}
