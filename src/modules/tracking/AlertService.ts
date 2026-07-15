@@ -1,35 +1,60 @@
-import { useEffect } from 'react';
+import { Activity, Case } from '../../types';
 
-const AlertService = {
-    checkAlerts: (cases) => {
-        const alerts = cases.map(caseItem => {
-            const alert = { id: caseItem.id, message: '', isActive: false };
-            const today = new Date();
-            const dueDate = new Date(caseItem.nextStepDueDate);
+export interface CaseAlert {
+    id: string;
+    message: string;
+    level: 'yellow' | 'red';
+}
 
-            if (dueDate < today) {
-                alert.message = `Alert: The case ${caseItem.id} - ${caseItem.debtorName} has a due date that has passed.`;
-                alert.isActive = true;
-            } else if ((dueDate - today) / (1000 * 60 * 60 * 24) <= 3) {
-                alert.message = `Alert: The case ${caseItem.id} - ${caseItem.debtorName} is due in 3 days.`;
-                alert.isActive = true;
-            }
+const MS_PER_DAY = 1000 * 60 * 60 * 24;
 
-            return alert;
-        });
-
-        return alerts.filter(alert => alert.isActive);
-    },
-
-    sendEmailNotification: (alert) => {
-        // Logic to send email notification to the responsible lawyer
-        console.log(`Sending email: ${alert.message}`);
-    },
-
-    handleAlerts: (cases) => {
-        const alerts = AlertService.checkAlerts(cases);
-        alerts.forEach(alert => AlertService.sendEmailNotification(alert));
-    }
+const daysUntil = (deadline: Date | string): number => {
+    const due = new Date(deadline);
+    return (due.getTime() - Date.now()) / MS_PER_DAY;
 };
 
-export default AlertService;
+export const checkAlerts = (cases: Case[], activitiesByCase: Record<string, Activity[]> = {}): CaseAlert[] => {
+    const alerts: CaseAlert[] = [];
+
+    cases.forEach(caseItem => {
+        const activities = activitiesByCase[caseItem.id] ?? [];
+        activities.forEach(activity => {
+            if (!activity.nextStepDeadline) {
+                return;
+            }
+            const days = daysUntil(activity.nextStepDeadline);
+            if (days < 0) {
+                alerts.push({
+                    id: caseItem.id,
+                    message: `Alerta: el caso ${caseItem.id} - ${caseItem.debtorName} tiene una fecha límite vencida.`,
+                    level: 'red',
+                });
+            } else if (days <= 3) {
+                alerts.push({
+                    id: caseItem.id,
+                    message: `Alerta: el caso ${caseItem.id} - ${caseItem.debtorName} vence en 3 días o menos.`,
+                    level: 'yellow',
+                });
+            }
+        });
+    });
+
+    return alerts;
+};
+
+export const getAlertCounts = (cases: Case[] = [], activitiesByCase: Record<string, Activity[]> = {}): { yellow: number; red: number } => {
+    const alerts = checkAlerts(cases, activitiesByCase);
+    return {
+        yellow: alerts.filter(alert => alert.level === 'yellow').length,
+        red: alerts.filter(alert => alert.level === 'red').length,
+    };
+};
+
+export const sendEmailNotification = (alert: CaseAlert): void => {
+    // Stub: aquí iría la integración real de correo al abogado responsable.
+    console.log(`Sending email: ${alert.message}`);
+};
+
+export const handleAlerts = (cases: Case[], activitiesByCase: Record<string, Activity[]> = {}): void => {
+    checkAlerts(cases, activitiesByCase).forEach(sendEmailNotification);
+};

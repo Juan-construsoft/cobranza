@@ -1,24 +1,39 @@
 import React, { useState } from 'react';
+import { Activity } from '../../types';
 
-const ActivityForm = ({ onSubmit }) => {
-    const [activityType, setActivityType] = useState('');
+type ActivityType = Activity['type'] | '';
+
+export interface ActivityFormData {
+    activityType: ActivityType;
+    activityDate: string;
+    description: string;
+    nextStep: string;
+    deadline: string;
+    document: File | null;
+}
+
+interface ActivityFormProps {
+    onSubmit: (activityData: ActivityFormData) => void;
+}
+
+const ActivityForm: React.FC<ActivityFormProps> = ({ onSubmit }) => {
+    const [activityType, setActivityType] = useState<ActivityType>('');
     const [activityDate, setActivityDate] = useState('');
     const [description, setDescription] = useState('');
     const [nextStep, setNextStep] = useState('');
     const [deadline, setDeadline] = useState('');
-    const [document, setDocument] = useState(null);
+    const [document, setDocument] = useState<File | null>(null);
 
-    const handleSubmit = (e) => {
+    const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        const activityData = {
+        onSubmit({
             activityType,
             activityDate,
             description,
             nextStep,
             deadline,
             document,
-        };
-        onSubmit(activityData);
+        });
         resetForm();
     };
 
@@ -35,7 +50,11 @@ const ActivityForm = ({ onSubmit }) => {
         <form onSubmit={handleSubmit}>
             <div>
                 <label>Tipo de Actividad:</label>
-                <select value={activityType} onChange={(e) => setActivityType(e.target.value)} required>
+                <select
+                    value={activityType}
+                    onChange={(e) => setActivityType(e.target.value as ActivityType)}
+                    required
+                >
                     <option value="">Seleccione...</option>
                     <option value="Demanda Radicada">Demanda Radicada</option>
                     <option value="Auto Admisorio">Auto Admisorio</option>
@@ -71,7 +90,7 @@ const ActivityForm = ({ onSubmit }) => {
             </div>
             <div>
                 <label>Adjuntar Documento Relacionado:</label>
-                <input type="file" onChange={(e) => setDocument(e.target.files[0])} />
+                <input type="file" onChange={(e) => setDocument(e.target.files?.[0] ?? null)} />
             </div>
             <button type="submit">Registrar Actividad</button>
         </form>

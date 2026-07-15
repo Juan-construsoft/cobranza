@@ -1,11 +1,16 @@
 import React from 'react';
-import { Activity } from '../../types'; // Assuming you have an Activity type defined in your types/index.ts
+import { Activity } from '../../types';
 
 interface ActivityHistoryProps {
-    activities: Activity[];
+    activities?: Activity[];
 }
 
-const ActivityHistory: React.FC<ActivityHistoryProps> = ({ activities }) => {
+const formatDate = (date: Date | string): string => {
+    const d = new Date(date);
+    return isNaN(d.getTime()) ? '' : d.toLocaleDateString('es-CO');
+};
+
+const ActivityHistory: React.FC<ActivityHistoryProps> = ({ activities = [] }) => {
     return (
         <div>
             <h2>Historial de Actuaciones</h2>
@@ -23,10 +28,10 @@ const ActivityHistory: React.FC<ActivityHistoryProps> = ({ activities }) => {
                     {activities.map((activity, index) => (
                         <tr key={index}>
                             <td>{activity.type}</td>
-                            <td>{activity.date}</td>
+                            <td>{formatDate(activity.date)}</td>
                             <td>{activity.description}</td>
                             <td>{activity.nextStep}</td>
-                            <td>{activity.dueDate}</td>
+                            <td>{formatDate(activity.nextStepDeadline)}</td>
                         </tr>
                     ))}
                 </tbody>

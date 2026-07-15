@@ -1,46 +1,43 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useHistory } from 'react-router-dom';
-import CaseService from './CaseService';
+import { getCaseById, updateCase } from './CaseService';
 import FileUpload from '../../components/FileUpload';
+import { Case } from '../../types';
 
-const CaseDetail = () => {
-    const { caseId } = useParams();
+const CaseDetail: React.FC = () => {
+    const { id } = useParams<{ id: string }>();
     const history = useHistory();
-    const [caseData, setCaseData] = useState(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
+    const [caseData, setCaseData] = useState<Case | null>(null);
+    const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        const fetchCaseData = async () => {
-            try {
-                const data = await CaseService.getCaseById(caseId);
-                setCaseData(data);
-            } catch (err) {
-                setError('Error fetching case data');
-            } finally {
-                setLoading(false);
-            }
-        };
+        const data = getCaseById(id);
+        if (data) {
+            setCaseData(data);
+        } else {
+            setError('No se encontró el caso.');
+        }
+    }, [id]);
 
-        fetchCaseData();
-    }, [caseId]);
-
-    const handleInputChange = (e) => {
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
-        setCaseData({ ...caseData, [name]: value });
+        setCaseData(prev => (prev ? { ...prev, [name]: value } : prev));
     };
 
-    const handleSave = async () => {
-        try {
-            await CaseService.updateCase(caseId, caseData);
+    const handleSave = () => {
+        if (!caseData) {
+            return;
+        }
+        const updated = updateCase(id, caseData);
+        if (updated) {
             history.push('/cases');
-        } catch (err) {
-            setError('Error saving case data');
+        } else {
+            setError('Error al guardar los datos del caso.');
         }
     };
 
-    if (loading) return <div>Loading...</div>;
     if (error) return <div>{error}</div>;
+    if (!caseData) return <div>Cargando...</div>;
 
     return (
         <div>
@@ -48,7 +45,7 @@ const CaseDetail = () => {
             <form>
                 <div>
                     <label>ID del Caso:</label>
-                    <input type="text" name="caseId" value={caseData.caseId} readOnly />
+                    <input type="text" name="id" value={caseData.id} readOnly />
                 </div>
                 <div>
                     <label>Nombre del Deudor:</label>
@@ -66,7 +63,7 @@ const CaseDetail = () => {
                     <label>Comentarios Iniciales:</label>
                     <textarea name="initialComments" value={caseData.initialComments} onChange={handleInputChange}></textarea>
                 </div>
-                <FileUpload caseId={caseId} />
+                <FileUpload onFileUpload={() => { /* Persistencia de documentos pendiente */ }} />
                 <button type="button" onClick={handleSave}>Guardar</button>
             </form>
         </div>

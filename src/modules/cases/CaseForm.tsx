@@ -1,52 +1,112 @@
 import React, { useState } from 'react';
+import { useHistory } from 'react-router-dom';
+import { createCase } from './CaseService';
+import { Case } from '../../types';
 
-const CaseForm = ({ onSubmit }) => {
-    const [caseData, setCaseData] = useState({
-        caseId: '',
-        debtorName: '',
-        debtorIdType: 'C.C.',
-        debtorIdNumber: '',
-        debtorAddress: '',
-        debtorPhones: '',
-        debtorEmails: '',
-        creditorName: '',
-        obligationNumber: '',
-        initialDebtValue: '',
-        guaranteeType: [],
-        responsibleLawyer: '',
-        originalDueDate: '',
-        moraStartDate: '',
-        initialComments: '',
-        documents: []
-    });
+type DebtorIdType = Case['debtorIdType'];
+type CreditorName = Case['creditorName'];
+type GuaranteeType = Case['guaranteeType'];
 
-    const handleChange = (e) => {
+interface CaseFormState {
+    caseId: string;
+    debtorName: string;
+    debtorIdType: DebtorIdType;
+    debtorIdNumber: string;
+    debtorAddress: string;
+    debtorPhones: string;
+    debtorEmails: string;
+    creditorName: string;
+    obligationNumber: string;
+    initialDebtValue: string;
+    guaranteeType: string[];
+    responsibleLawyer: string;
+    originalDueDate: string;
+    moraStartDate: string;
+    initialComments: string;
+    documents: File[];
+}
+
+const initialState: CaseFormState = {
+    caseId: '',
+    debtorName: '',
+    debtorIdType: 'C.C.',
+    debtorIdNumber: '',
+    debtorAddress: '',
+    debtorPhones: '',
+    debtorEmails: '',
+    creditorName: 'Banco A',
+    obligationNumber: '',
+    initialDebtValue: '',
+    guaranteeType: [],
+    responsibleLawyer: 'Abogado 1',
+    originalDueDate: '',
+    moraStartDate: '',
+    initialComments: '',
+    documents: [],
+};
+
+interface CaseFormProps {
+    onSubmit?: (caseData: Case) => void;
+}
+
+const toCase = (formData: CaseFormState): Case => ({
+    id: formData.caseId,
+    debtorName: formData.debtorName,
+    debtorIdType: formData.debtorIdType,
+    debtorIdNumber: formData.debtorIdNumber,
+    debtorAddress: formData.debtorAddress,
+    debtorPhones: formData.debtorPhones,
+    debtorEmails: formData.debtorEmails,
+    creditorName: formData.creditorName as CreditorName,
+    obligationNumber: formData.obligationNumber,
+    initialAmount: Number(formData.initialDebtValue) || 0,
+    guaranteeType: formData.guaranteeType as GuaranteeType,
+    responsibleLawyer: formData.responsibleLawyer,
+    originalDueDate: new Date(formData.originalDueDate),
+    startDateOfDelinquency: new Date(formData.moraStartDate),
+    initialComments: formData.initialComments,
+    status: 'Active',
+    lastActivityDate: new Date(),
+});
+
+const CaseForm: React.FC<CaseFormProps> = ({ onSubmit }) => {
+    const history = useHistory();
+    const [caseData, setCaseData] = useState<CaseFormState>(initialState);
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
         setCaseData({
             ...caseData,
-            [name]: value
+            [name]: value,
         });
     };
 
-    const handleMultiSelectChange = (e) => {
-        const { options } = e.target;
-        const selectedOptions = Array.from(options).filter(option => option.selected).map(option => option.value);
+    const handleMultiSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        const selectedOptions = Array.from(e.target.options)
+            .filter(option => option.selected)
+            .map(option => option.value);
         setCaseData({
             ...caseData,
-            guaranteeType: selectedOptions
+            guaranteeType: selectedOptions,
         });
     };
 
-    const handleFileChange = (e) => {
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setCaseData({
             ...caseData,
-            documents: [...caseData.documents, ...Array.from(e.target.files)]
+            documents: [...caseData.documents, ...Array.from(e.target.files ?? [])],
         });
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        onSubmit(caseData);
+        const newCase = toCase(caseData);
+        if (onSubmit) {
+            onSubmit(newCase);
+        } else {
+            createCase(newCase);
+            history.push('/cases');
+        }
     };
 
     return (

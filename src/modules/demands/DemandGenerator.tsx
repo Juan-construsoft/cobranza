@@ -1,59 +1,47 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { getCaseById } from '../cases/CaseService';
-import { generateDemand } from './DemandService';
+import { generateDemand, downloadDemand } from './DemandService';
 import { TemplateSelector } from './TemplateSelector';
+import { Case } from '../../types';
 
-const DemandGenerator = () => {
-    const { caseId } = useParams();
-    const [caseData, setCaseData] = useState(null);
-    const [selectedTemplate, setSelectedTemplate] = useState('');
+const DemandGenerator: React.FC = () => {
+    const { caseId } = useParams<{ caseId?: string }>();
+    const [caseData, setCaseData] = useState<Case | null>(null);
     const [demandText, setDemandText] = useState('');
 
     useEffect(() => {
-        const fetchCaseData = async () => {
-            const data = await getCaseById(caseId);
-            setCaseData(data);
-        };
-        fetchCaseData();
+        if (caseId) {
+            setCaseData(getCaseById(caseId) ?? null);
+        }
     }, [caseId]);
 
-    const handleTemplateSelect = (template) => {
-        setSelectedTemplate(template);
-        generateDemandText(template);
-    };
-
-    const generateDemandText = (template) => {
+    const handleTemplateSelect = (template: string) => {
         if (caseData) {
-            const text = template
-                .replace('{{nombre_deudor}}', caseData.debtorName)
-                .replace('{{valor_adeudado}}', caseData.amountOwed);
-            setDemandText(text);
+            setDemandText(generateDemand(template, caseData));
         }
     };
 
     const handleDownload = () => {
-        const blob = new Blob([demandText], { type: 'text/plain' });
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.download = 'demand.txt';
-        link.click();
+        downloadDemand(demandText, `demanda-${caseData?.id ?? 'caso'}.txt`);
     };
 
     return (
         <div>
             <h1>Generador de Demandas</h1>
-            {caseData && (
+            {caseData ? (
                 <>
                     <h2>Datos del Caso</h2>
                     <p>ID del Caso: {caseData.id}</p>
                     <p>Nombre del Deudor: {caseData.debtorName}</p>
-                    <p>Valor Adeudado: {caseData.amountOwed}</p>
+                    <p>Valor Adeudado: {caseData.initialAmount.toLocaleString('es-CO')}</p>
                     <TemplateSelector onTemplateSelect={handleTemplateSelect} />
                     <h2>Borrador de Demanda</h2>
                     <textarea value={demandText} readOnly rows={10} cols={50} />
-                    <button onClick={handleDownload}>Descargar Demanda</button>
+                    <button onClick={handleDownload} disabled={!demandText}>Descargar Demanda</button>
                 </>
+            ) : (
+                <p>No se encontró el caso. Verifique el ID del caso en la URL.</p>
             )}
         </div>
     );

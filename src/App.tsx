@@ -15,7 +15,7 @@ const App = () => {
                 <Route path="/cases" exact component={CaseList} />
                 <Route path="/cases/new" component={CaseForm} />
                 <Route path="/cases/:id" component={CaseDetail} />
-                <Route path="/demands" component={DemandGenerator} />
+                <Route path="/demands/:caseId?" component={DemandGenerator} />
                 <Route path="/tracking/:id" component={ActivityHistory} />
             </Switch>
         </Router>

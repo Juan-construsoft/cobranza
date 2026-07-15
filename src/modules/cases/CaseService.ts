@@ -24,6 +24,17 @@ export const updateCase = (id: string, updatedCase: Partial<Case>): Case | undef
     return undefined;
 };
 
+export const getActiveCases = (): number => {
+    return cases.filter(caseItem => caseItem.status === 'Active').length;
+};
+
+export const getCasesByStatus = (): Record<string, number> => {
+    return cases.reduce<Record<string, number>>((acc, caseItem) => {
+        acc[caseItem.status] = (acc[caseItem.status] ?? 0) + 1;
+        return acc;
+    }, {});
+};
+
 export const deleteCase = (id: string): boolean => {
     const index = cases.findIndex(caseItem => caseItem.id === id);
     if (index !== -1) {
