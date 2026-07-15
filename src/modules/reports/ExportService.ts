@@ -1,9 +1,9 @@
 import { saveAs } from 'file-saver';
-import { parse } from 'json2csv';
 import * as XLSX from 'xlsx';
 
 export const exportCasesToCSV = (cases: any[]) => {
-    const csv = parse(cases);
+    const worksheet = XLSX.utils.json_to_sheet(cases);
+    const csv = XLSX.utils.sheet_to_csv(worksheet);
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     saveAs(blob, 'cases.csv');
 };
