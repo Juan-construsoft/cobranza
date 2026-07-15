@@ -1,45 +1,56 @@
-import { Case } from '../../types';
+import { supabase } from '../../lib/supabaseClient';
+import { caseFromRow, casePatchToRow, caseToRow, CaseRow } from '../../lib/mappers';
+import { Case, CaseStatus, NewCase } from '../../types';
 
-const cases: Case[] = [];
+const TABLE = 'cases';
 
-export const createCase = (newCase: Case): Case => {
-    cases.push(newCase);
-    return newCase;
+export const createCase = async (input: NewCase): Promise<Case> => {
+    const { data, error } = await supabase
+        .from(TABLE)
+        .insert(caseToRow(input))
+        .select()
+        .single();
+    if (error) throw new Error(`No fue posible crear el caso: ${error.message}`);
+    return caseFromRow(data as CaseRow);
 };
 
-export const getCases = (): Case[] => {
-    return cases;
+export const getCases = async (): Promise<Case[]> => {
+    const { data, error } = await supabase
+        .from(TABLE)
+        .select()
+        .order('last_activity_date', { ascending: false });
+    if (error) throw new Error(`No fue posible cargar los casos: ${error.message}`);
+    return (data as CaseRow[]).map(caseFromRow);
 };
 
-export const getCaseById = (id: string): Case | undefined => {
-    return cases.find(caseItem => caseItem.id === id);
+export const getCaseById = async (id: string): Promise<Case | null> => {
+    const { data, error } = await supabase.from(TABLE).select().eq('id', id).maybeSingle();
+    if (error) throw new Error(`No fue posible cargar el caso: ${error.message}`);
+    return data ? caseFromRow(data as CaseRow) : null;
 };
 
-export const updateCase = (id: string, updatedCase: Partial<Case>): Case | undefined => {
-    const index = cases.findIndex(caseItem => caseItem.id === id);
-    if (index !== -1) {
-        cases[index] = { ...cases[index], ...updatedCase };
-        return cases[index];
-    }
-    return undefined;
+export const updateCase = async (id: string, patch: Partial<NewCase>): Promise<Case> => {
+    const { data, error } = await supabase
+        .from(TABLE)
+        .update(casePatchToRow(patch))
+        .eq('id', id)
+        .select()
+        .single();
+    if (error) throw new Error(`No fue posible guardar el caso: ${error.message}`);
+    return caseFromRow(data as CaseRow);
 };
 
-export const getActiveCases = (): number => {
-    return cases.filter(caseItem => caseItem.status === 'Active').length;
+export const deleteCase = async (id: string): Promise<void> => {
+    const { error } = await supabase.from(TABLE).delete().eq('id', id);
+    if (error) throw new Error(`No fue posible eliminar el caso: ${error.message}`);
 };
 
-export const getCasesByStatus = (): Record<string, number> => {
-    return cases.reduce<Record<string, number>>((acc, caseItem) => {
+// Conteos como funciones puras: el Dashboard ya trae los casos, sin roundtrips extra.
+export const countActiveCases = (cases: Case[]): number =>
+    cases.filter(caseItem => caseItem.status === 'Active').length;
+
+export const countByStatus = (cases: Case[]): Partial<Record<CaseStatus, number>> =>
+    cases.reduce<Partial<Record<CaseStatus, number>>>((acc, caseItem) => {
         acc[caseItem.status] = (acc[caseItem.status] ?? 0) + 1;
         return acc;
     }, {});
-};
-
-export const deleteCase = (id: string): boolean => {
-    const index = cases.findIndex(caseItem => caseItem.id === id);
-    if (index !== -1) {
-        cases.splice(index, 1);
-        return true;
-    }
-    return false;
-};

@@ -1,71 +1,126 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useHistory } from 'react-router-dom';
-import { getCaseById, updateCase } from './CaseService';
-import FileUpload from '../../components/FileUpload';
-import { Case } from '../../types';
+import Paper from '@mui/material/Paper';
+import Typography from '@mui/material/Typography';
+import Button from '@mui/material/Button';
+import Box from '@mui/material/Box';
+import Alert from '@mui/material/Alert';
+import CircularProgress from '@mui/material/CircularProgress';
+import Dialog from '@mui/material/Dialog';
+import DialogTitle from '@mui/material/DialogTitle';
+import DialogContent from '@mui/material/DialogContent';
+import DialogContentText from '@mui/material/DialogContentText';
+import DialogActions from '@mui/material/DialogActions';
+import DeleteIcon from '@mui/icons-material/Delete';
+import DescriptionIcon from '@mui/icons-material/Description';
+import { getCaseById, updateCase, deleteCase } from './CaseService';
+import { useAsync } from '../../lib/useAsync';
+import { useNotification } from '../../context/NotificationContext';
+import CaseFields, { CaseFormValues, valuesFromCase, valuesToNewCase } from './CaseFields';
 
 const CaseDetail: React.FC = () => {
     const { id } = useParams<{ id: string }>();
     const history = useHistory();
-    const [caseData, setCaseData] = useState<Case | null>(null);
-    const [error, setError] = useState<string | null>(null);
+    const { notify } = useNotification();
+    const { data: caseData, loading, error } = useAsync(() => getCaseById(id), [id]);
+    const [values, setValues] = useState<CaseFormValues | null>(null);
+    const [saving, setSaving] = useState(false);
+    const [confirmDelete, setConfirmDelete] = useState(false);
+    const [deleting, setDeleting] = useState(false);
 
     useEffect(() => {
-        const data = getCaseById(id);
-        if (data) {
-            setCaseData(data);
-        } else {
-            setError('No se encontró el caso.');
+        if (caseData) {
+            setValues(valuesFromCase(caseData));
         }
-    }, [id]);
+    }, [caseData]);
 
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-        const { name, value } = e.target;
-        setCaseData(prev => (prev ? { ...prev, [name]: value } : prev));
+    const handleChange = (patch: Partial<CaseFormValues>) => {
+        setValues(prev => (prev ? { ...prev, ...patch } : prev));
     };
 
-    const handleSave = () => {
-        if (!caseData) {
-            return;
+    const handleSave = async () => {
+        if (!values) return;
+        setSaving(true);
+        try {
+            await updateCase(id, valuesToNewCase(values));
+            notify('Caso guardado correctamente.', 'success');
+        } catch (err) {
+            notify(err instanceof Error ? err.message : 'Error al guardar el caso.', 'error');
+        } finally {
+            setSaving(false);
         }
-        const updated = updateCase(id, caseData);
-        if (updated) {
+    };
+
+    const handleDelete = async () => {
+        setDeleting(true);
+        try {
+            await deleteCase(id);
+            notify('Caso eliminado.', 'success');
             history.push('/cases');
-        } else {
-            setError('Error al guardar los datos del caso.');
+        } catch (err) {
+            notify(err instanceof Error ? err.message : 'Error al eliminar el caso.', 'error');
+            setDeleting(false);
+            setConfirmDelete(false);
         }
     };
 
-    if (error) return <div>{error}</div>;
-    if (!caseData) return <div>Cargando...</div>;
+    if (loading) {
+        return (
+            <Box sx={{ display: 'flex', justifyContent: 'center', my: 6 }}>
+                <CircularProgress />
+            </Box>
+        );
+    }
+    if (error) return <Alert severity="error">{error}</Alert>;
+    if (!caseData || !values) return <Alert severity="warning">No se encontró el caso.</Alert>;
 
     return (
         <div>
-            <h2>Detalle del Caso</h2>
-            <form>
-                <div>
-                    <label>ID del Caso:</label>
-                    <input type="text" name="id" value={caseData.id} readOnly />
-                </div>
-                <div>
-                    <label>Nombre del Deudor:</label>
-                    <input type="text" name="debtorName" value={caseData.debtorName} onChange={handleInputChange} />
-                </div>
-                <div>
-                    <label>Número de Obligación:</label>
-                    <input type="text" name="obligationNumber" value={caseData.obligationNumber} onChange={handleInputChange} />
-                </div>
-                <div>
-                    <label>Valor Adeudado Inicial:</label>
-                    <input type="number" name="initialAmount" value={caseData.initialAmount} onChange={handleInputChange} />
-                </div>
-                <div>
-                    <label>Comentarios Iniciales:</label>
-                    <textarea name="initialComments" value={caseData.initialComments} onChange={handleInputChange}></textarea>
-                </div>
-                <FileUpload onFileUpload={() => { /* Persistencia de documentos pendiente */ }} />
-                <button type="button" onClick={handleSave}>Guardar</button>
-            </form>
+            <Paper sx={{ p: 4, mb: 3 }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+                    <Typography variant="h4">Detalle del Caso</Typography>
+                    <Box sx={{ display: 'flex', gap: 1 }}>
+                        <Button
+                            variant="outlined"
+                            startIcon={<DescriptionIcon />}
+                            onClick={() => history.push(`/demands/${id}`)}
+                        >
+                            Generar Demanda
+                        </Button>
+                        <Button
+                            variant="outlined"
+                            color="error"
+                            startIcon={<DeleteIcon />}
+                            onClick={() => setConfirmDelete(true)}
+                        >
+                            Eliminar
+                        </Button>
+                    </Box>
+                </Box>
+                <CaseFields values={values} onChange={handleChange} showStatus />
+                <Box sx={{ mt: 3, display: 'flex', gap: 2 }}>
+                    <Button variant="contained" onClick={handleSave} disabled={saving}>
+                        {saving ? 'Guardando…' : 'Guardar Cambios'}
+                    </Button>
+                    <Button onClick={() => history.push('/cases')}>Volver al Listado</Button>
+                </Box>
+            </Paper>
+
+            <Dialog open={confirmDelete} onClose={() => setConfirmDelete(false)}>
+                <DialogTitle>¿Eliminar este caso?</DialogTitle>
+                <DialogContent>
+                    <DialogContentText>
+                        Se eliminará el caso de {caseData.debtorName} y todas sus actuaciones
+                        registradas. Esta acción no se puede deshacer.
+                    </DialogContentText>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setConfirmDelete(false)}>Cancelar</Button>
+                    <Button color="error" variant="contained" onClick={handleDelete} disabled={deleting}>
+                        {deleting ? 'Eliminando…' : 'Eliminar'}
+                    </Button>
+                </DialogActions>
+            </Dialog>
         </div>
     );
 };
