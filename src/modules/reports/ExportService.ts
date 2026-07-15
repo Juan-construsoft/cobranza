@@ -1,5 +1,6 @@
 import { saveAs } from 'file-saver';
 import { parse } from 'json2csv';
+import * as XLSX from 'xlsx';
 
 export const exportCasesToCSV = (cases: any[]) => {
     const csv = parse(cases);

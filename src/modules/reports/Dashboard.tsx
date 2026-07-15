@@ -1,25 +1,16 @@
 import React, { useEffect, useState } from 'react';
-import { getActiveCases, getCasesByStatus } from '../cases/CaseService';
+import { getCases, getActiveCases, getCasesByStatus } from '../cases/CaseService';
 import { getAlertCounts } from '../tracking/AlertService';
 
 const Dashboard: React.FC = () => {
     const [activeCasesCount, setActiveCasesCount] = useState(0);
-    const [casesByStatus, setCasesByStatus] = useState<{ [key: string]: number }>({});
+    const [casesByStatus, setCasesByStatus] = useState<Record<string, number>>({});
     const [alertCounts, setAlertCounts] = useState({ yellow: 0, red: 0 });
 
     useEffect(() => {
-        const fetchData = async () => {
-            const activeCount = await getActiveCases();
-            setActiveCasesCount(activeCount);
-
-            const statusCounts = await getCasesByStatus();
-            setCasesByStatus(statusCounts);
-
-            const alerts = await getAlertCounts();
-            setAlertCounts(alerts);
-        };
-
-        fetchData();
+        setActiveCasesCount(getActiveCases());
+        setCasesByStatus(getCasesByStatus());
+        setAlertCounts(getAlertCounts(getCases()));
     }, []);
 
     return (
