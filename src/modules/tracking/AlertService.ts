@@ -9,8 +9,9 @@ export interface CaseAlert {
 
 const MS_PER_DAY = 1000 * 60 * 60 * 24;
 
+// El plazo cuenta como vencido al terminar el día límite (hora local).
 const daysUntil = (deadline: string): number => {
-    const due = new Date(`${deadline}T00:00:00`);
+    const due = new Date(`${deadline}T23:59:59`);
     return (due.getTime() - Date.now()) / MS_PER_DAY;
 };
 

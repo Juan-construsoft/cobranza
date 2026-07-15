@@ -27,7 +27,8 @@ const MS_PER_DAY = 1000 * 60 * 60 * 24;
 
 const deadlineChip = (deadline: string | null) => {
     if (!deadline) return null;
-    const days = (new Date(`${deadline}T00:00:00`).getTime() - Date.now()) / MS_PER_DAY;
+    // Vencido al terminar el día límite (hora local), igual que AlertService.
+    const days = (new Date(`${deadline}T23:59:59`).getTime() - Date.now()) / MS_PER_DAY;
     const label = formatDate(deadline);
     if (days < 0) return <Chip size="small" color="error" label={label} />;
     if (days <= 3) return <Chip size="small" color="warning" label={label} />;
