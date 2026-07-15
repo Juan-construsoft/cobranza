@@ -31,7 +31,7 @@ const ActivityHistory: React.FC<ActivityHistoryProps> = ({ activities = [] }) =>
                             <td>{formatDate(activity.date)}</td>
                             <td>{activity.description}</td>
                             <td>{activity.nextStep}</td>
-                            <td>{formatDate(activity.nextStepDeadline)}</td>
+                            <td>{activity.nextStepDeadline ? formatDate(activity.nextStepDeadline) : ''}</td>
                         </tr>
                     ))}
                 </tbody>

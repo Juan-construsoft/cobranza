@@ -1,35 +1,98 @@
+// IMPORTANTE: las uniones literales de este archivo y los enums de
+// supabase/schema.sql son espejo uno del otro. Cualquier cambio se hace en AMBOS.
+
+export type CaseStatus =
+    | 'Active'
+    | 'InLawsuit'
+    | 'PaymentAgreement'
+    | 'Paid'
+    | 'Closed'
+    | 'Archived';
+
+export const CASE_STATUS_LABELS: Record<CaseStatus, string> = {
+    Active: 'Activo',
+    InLawsuit: 'En Proceso Judicial',
+    PaymentAgreement: 'En Acuerdo de Pago',
+    Paid: 'Pagado',
+    Closed: 'Cerrado',
+    Archived: 'Archivado',
+};
+
+export const CASE_STATUSES = Object.keys(CASE_STATUS_LABELS) as CaseStatus[];
+
+export const CREDITOR_OPTIONS: string[] = ['Banco A', 'Banco B'];
+
+export type DebtorIdType = 'C.C.' | 'NIT' | 'Pasaporte';
+
+export type GuaranteeType = 'Hipotecaria' | 'Prendaria' | 'Fianza' | 'Personal';
+
+export const GUARANTEE_TYPES: GuaranteeType[] = ['Hipotecaria', 'Prendaria', 'Fianza', 'Personal'];
+
 export interface Case {
     id: string;
     debtorName: string;
-    debtorIdType: 'C.C.' | 'NIT' | 'Pasaporte';
+    debtorIdType: DebtorIdType;
     debtorIdNumber: string;
     debtorAddress: string;
     debtorPhones: string;
     debtorEmails: string;
-    creditorName: 'Banco A' | 'Banco B'; // Add more as needed
+    creditorName: string;
     obligationNumber: string;
     initialAmount: number;
-    guaranteeType: Array<'Hipotecaria' | 'Prendaria' | 'Fianza' | 'Personal'>;
+    guaranteeType: GuaranteeType[];
     responsibleLawyer: string;
-    originalDueDate: Date;
-    startDateOfDelinquency: Date;
+    originalDueDate: string; // YYYY-MM-DD
+    startDateOfDelinquency: string; // YYYY-MM-DD
     initialComments: string;
-    status: string; // e.g., 'Active', 'Closed', etc.
-    lastActivityDate: Date;
+    status: CaseStatus;
+    lastActivityDate: string; // ISO timestamptz
+    createdAt?: string; // ISO timestamptz
 }
+
+export type NewCase = Omit<Case, 'id' | 'lastActivityDate' | 'createdAt'>;
+
+export type ActivityType =
+    | 'Demanda Radicada'
+    | 'Auto Admisorio'
+    | 'Auto Inadmisorio'
+    | 'Notificación Realizada'
+    | 'Respuesta Demanda'
+    | 'Audiencia Agendada'
+    | 'Audiencia Realizada'
+    | 'Sentencia Emitida'
+    | 'Recurso Presentado'
+    | 'Medida Cautelar Decretada'
+    | 'Embargo Realizado'
+    | 'Remate Realizado'
+    | 'Pago Recibido'
+    | 'Caso Archivado';
+
+export const ACTIVITY_TYPES: ActivityType[] = [
+    'Demanda Radicada',
+    'Auto Admisorio',
+    'Auto Inadmisorio',
+    'Notificación Realizada',
+    'Respuesta Demanda',
+    'Audiencia Agendada',
+    'Audiencia Realizada',
+    'Sentencia Emitida',
+    'Recurso Presentado',
+    'Medida Cautelar Decretada',
+    'Embargo Realizado',
+    'Remate Realizado',
+    'Pago Recibido',
+    'Caso Archivado',
+];
 
 export interface Activity {
-    type: 'Demanda Radicada' | 'Auto Admisorio' | 'Auto Inadmisorio' | 'Notificación Realizada' | 'Respuesta Demanda' | 'Audiencia Agendada' | 'Audiencia Realizada' | 'Sentencia Emitida' | 'Recurso Presentado' | 'Medida Cautelar Decretada' | 'Embargo Realizado' | 'Remate Realizado' | 'Pago Recibido' | 'Caso Archivado';
-    date: Date;
+    id: string;
+    caseId: string;
+    type: ActivityType;
+    date: string; // YYYY-MM-DD
     description: string;
     nextStep: string;
-    nextStepDeadline: Date;
-    relatedDocument?: string; // URL or path to the document
+    nextStepDeadline: string | null; // YYYY-MM-DD
+    relatedDocument?: string | null; // path dentro del bucket case-documents
 }
 
-export interface Report {
-    totalActiveCases: number;
-    casesByStatus: Record<string, number>;
-    alertYellowCount: number;
-    alertRedCount: number;
-}
+export type NewActivity = Omit<Activity, 'id'>;

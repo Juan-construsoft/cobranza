@@ -62,11 +62,11 @@ const toCase = (formData: CaseFormState): Case => ({
     initialAmount: Number(formData.initialDebtValue) || 0,
     guaranteeType: formData.guaranteeType as GuaranteeType,
     responsibleLawyer: formData.responsibleLawyer,
-    originalDueDate: new Date(formData.originalDueDate),
-    startDateOfDelinquency: new Date(formData.moraStartDate),
+    originalDueDate: formData.originalDueDate,
+    startDateOfDelinquency: formData.moraStartDate,
     initialComments: formData.initialComments,
     status: 'Active',
-    lastActivityDate: new Date(),
+    lastActivityDate: new Date().toISOString(),
 });
 
 const CaseForm: React.FC<CaseFormProps> = ({ onSubmit }) => {
