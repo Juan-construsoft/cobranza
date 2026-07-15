@@ -8,6 +8,10 @@ import TableRow from '@mui/material/TableRow';
 import Paper from '@mui/material/Paper';
 import Chip from '@mui/material/Chip';
 import Typography from '@mui/material/Typography';
+import IconButton from '@mui/material/IconButton';
+import OpenInNewIcon from '@mui/icons-material/OpenInNew';
+import { getSignedUrl } from '../documents/DocumentService';
+import { useNotification } from '../../context/NotificationContext';
 import { Activity } from '../../types';
 
 interface ActivityHistoryProps {
@@ -31,6 +35,17 @@ const deadlineChip = (deadline: string | null) => {
 };
 
 const ActivityHistory: React.FC<ActivityHistoryProps> = ({ activities }) => {
+    const { notify } = useNotification();
+
+    const handleOpenDocument = async (path: string) => {
+        try {
+            const url = await getSignedUrl(path);
+            window.open(url, '_blank', 'noopener');
+        } catch (err) {
+            notify(err instanceof Error ? err.message : 'Error al abrir el documento.', 'error');
+        }
+    };
+
     if (activities.length === 0) {
         return (
             <Typography color="text.secondary" sx={{ my: 2 }}>
@@ -49,6 +64,7 @@ const ActivityHistory: React.FC<ActivityHistoryProps> = ({ activities }) => {
                         <TableCell sx={{ fontWeight: 700 }}>Descripción</TableCell>
                         <TableCell sx={{ fontWeight: 700 }}>Próximo Paso</TableCell>
                         <TableCell sx={{ fontWeight: 700 }}>Fecha Límite</TableCell>
+                        <TableCell sx={{ fontWeight: 700 }}>Documento</TableCell>
                     </TableRow>
                 </TableHead>
                 <TableBody>
@@ -59,6 +75,17 @@ const ActivityHistory: React.FC<ActivityHistoryProps> = ({ activities }) => {
                             <TableCell>{activity.description}</TableCell>
                             <TableCell>{activity.nextStep}</TableCell>
                             <TableCell>{deadlineChip(activity.nextStepDeadline)}</TableCell>
+                            <TableCell>
+                                {activity.relatedDocument && (
+                                    <IconButton
+                                        size="small"
+                                        aria-label="abrir documento"
+                                        onClick={() => handleOpenDocument(activity.relatedDocument!)}
+                                    >
+                                        <OpenInNewIcon fontSize="small" />
+                                    </IconButton>
+                                )}
+                            </TableCell>
                         </TableRow>
                     ))}
                 </TableBody>

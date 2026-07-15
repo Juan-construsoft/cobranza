@@ -14,6 +14,8 @@ import DialogActions from '@mui/material/DialogActions';
 import DeleteIcon from '@mui/icons-material/Delete';
 import DescriptionIcon from '@mui/icons-material/Description';
 import { getCaseById, updateCase, deleteCase } from './CaseService';
+import { uploadCaseDocument } from '../documents/DocumentService';
+import DocumentsSection from '../documents/DocumentsSection';
 import { createActivity, getActivitiesByCase } from '../tracking/ActivityService';
 import ActivityForm, { ActivityFormData } from '../tracking/ActivityForm';
 import ActivityHistory from '../tracking/ActivityHistory';
@@ -65,7 +67,8 @@ const CaseDetail: React.FC = () => {
         setRegisteringActivity(true);
         try {
             const { document, ...fields } = activityData;
-            await createActivity({ ...fields, caseId: id });
+            const relatedDocument = document ? await uploadCaseDocument(id, document) : null;
+            await createActivity({ ...fields, relatedDocument, caseId: id });
             notify('Actuación registrada correctamente.', 'success');
             reloadActivities();
             reloadCase();
@@ -129,6 +132,13 @@ const CaseDetail: React.FC = () => {
                     </Button>
                     <Button onClick={() => history.push('/cases')}>Volver al Listado</Button>
                 </Box>
+            </Paper>
+
+            <Paper sx={{ p: 4, mb: 3 }}>
+                <Typography variant="h5" sx={{ mb: 2 }}>
+                    Documentos del Caso
+                </Typography>
+                <DocumentsSection caseId={id} />
             </Paper>
 
             <Paper sx={{ p: 4, mb: 3 }}>
