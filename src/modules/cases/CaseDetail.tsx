@@ -14,6 +14,9 @@ import DialogActions from '@mui/material/DialogActions';
 import DeleteIcon from '@mui/icons-material/Delete';
 import DescriptionIcon from '@mui/icons-material/Description';
 import { getCaseById, updateCase, deleteCase } from './CaseService';
+import { createActivity, getActivitiesByCase } from '../tracking/ActivityService';
+import ActivityForm, { ActivityFormData } from '../tracking/ActivityForm';
+import ActivityHistory from '../tracking/ActivityHistory';
 import { useAsync } from '../../lib/useAsync';
 import { useNotification } from '../../context/NotificationContext';
 import CaseFields, { CaseFormValues, valuesFromCase, valuesToNewCase } from './CaseFields';
@@ -22,11 +25,18 @@ const CaseDetail: React.FC = () => {
     const { id } = useParams<{ id: string }>();
     const history = useHistory();
     const { notify } = useNotification();
-    const { data: caseData, loading, error } = useAsync(() => getCaseById(id), [id]);
+    const { data: caseData, loading, error, reload: reloadCase } = useAsync(() => getCaseById(id), [id]);
+    const {
+        data: activities,
+        loading: activitiesLoading,
+        error: activitiesError,
+        reload: reloadActivities,
+    } = useAsync(() => getActivitiesByCase(id), [id]);
     const [values, setValues] = useState<CaseFormValues | null>(null);
     const [saving, setSaving] = useState(false);
     const [confirmDelete, setConfirmDelete] = useState(false);
     const [deleting, setDeleting] = useState(false);
+    const [registeringActivity, setRegisteringActivity] = useState(false);
 
     useEffect(() => {
         if (caseData) {
@@ -48,6 +58,21 @@ const CaseDetail: React.FC = () => {
             notify(err instanceof Error ? err.message : 'Error al guardar el caso.', 'error');
         } finally {
             setSaving(false);
+        }
+    };
+
+    const handleRegisterActivity = async (activityData: ActivityFormData) => {
+        setRegisteringActivity(true);
+        try {
+            const { document, ...fields } = activityData;
+            await createActivity({ ...fields, caseId: id });
+            notify('Actuación registrada correctamente.', 'success');
+            reloadActivities();
+            reloadCase();
+        } catch (err) {
+            notify(err instanceof Error ? err.message : 'Error al registrar la actuación.', 'error');
+        } finally {
+            setRegisteringActivity(false);
         }
     };
 
@@ -104,6 +129,28 @@ const CaseDetail: React.FC = () => {
                     </Button>
                     <Button onClick={() => history.push('/cases')}>Volver al Listado</Button>
                 </Box>
+            </Paper>
+
+            <Paper sx={{ p: 4, mb: 3 }}>
+                <Typography variant="h5" sx={{ mb: 2 }}>
+                    Registrar Actuación
+                </Typography>
+                <ActivityForm onSubmit={handleRegisterActivity} submitting={registeringActivity} />
+            </Paper>
+
+            <Paper sx={{ p: 4 }}>
+                <Typography variant="h5" sx={{ mb: 2 }}>
+                    Historial de Actuaciones
+                </Typography>
+                {activitiesLoading && (
+                    <Box sx={{ display: 'flex', justifyContent: 'center', my: 3 }}>
+                        <CircularProgress size={28} />
+                    </Box>
+                )}
+                {activitiesError && <Alert severity="error">{activitiesError}</Alert>}
+                {!activitiesLoading && !activitiesError && (
+                    <ActivityHistory activities={activities ?? []} />
+                )}
             </Paper>
 
             <Dialog open={confirmDelete} onClose={() => setConfirmDelete(false)}>

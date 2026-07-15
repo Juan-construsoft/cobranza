@@ -1,45 +1,45 @@
 import React, { useState } from 'react';
-import { Activity } from '../../types';
-
-type ActivityType = Activity['type'] | '';
+import Grid from '@mui/material/Grid';
+import TextField from '@mui/material/TextField';
+import MenuItem from '@mui/material/MenuItem';
+import Button from '@mui/material/Button';
+import { ActivityType, ACTIVITY_TYPES } from '../../types';
 
 export interface ActivityFormData {
-    activityType: ActivityType;
-    activityDate: string;
+    type: ActivityType;
+    date: string;
     description: string;
     nextStep: string;
-    deadline: string;
+    nextStepDeadline: string | null;
     document: File | null;
 }
 
 interface ActivityFormProps {
-    onSubmit: (activityData: ActivityFormData) => void;
+    onSubmit: (activityData: ActivityFormData) => void | Promise<void>;
+    submitting?: boolean;
 }
 
-const ActivityForm: React.FC<ActivityFormProps> = ({ onSubmit }) => {
-    const [activityType, setActivityType] = useState<ActivityType>('');
-    const [activityDate, setActivityDate] = useState('');
+const ActivityForm: React.FC<ActivityFormProps> = ({ onSubmit, submitting = false }) => {
+    const [type, setType] = useState<ActivityType | ''>('');
+    const [date, setDate] = useState('');
     const [description, setDescription] = useState('');
     const [nextStep, setNextStep] = useState('');
     const [deadline, setDeadline] = useState('');
     const [document, setDocument] = useState<File | null>(null);
 
-    const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        onSubmit({
-            activityType,
-            activityDate,
+        if (!type) return;
+        await onSubmit({
+            type,
+            date,
             description,
             nextStep,
-            deadline,
+            nextStepDeadline: deadline || null,
             document,
         });
-        resetForm();
-    };
-
-    const resetForm = () => {
-        setActivityType('');
-        setActivityDate('');
+        setType('');
+        setDate('');
         setDescription('');
         setNextStep('');
         setDeadline('');
@@ -48,51 +48,77 @@ const ActivityForm: React.FC<ActivityFormProps> = ({ onSubmit }) => {
 
     return (
         <form onSubmit={handleSubmit}>
-            <div>
-                <label>Tipo de Actividad:</label>
-                <select
-                    value={activityType}
-                    onChange={(e) => setActivityType(e.target.value as ActivityType)}
-                    required
-                >
-                    <option value="">Seleccione...</option>
-                    <option value="Demanda Radicada">Demanda Radicada</option>
-                    <option value="Auto Admisorio">Auto Admisorio</option>
-                    <option value="Auto Inadmisorio">Auto Inadmisorio</option>
-                    <option value="Notificación Realizada">Notificación Realizada</option>
-                    <option value="Respuesta Demanda">Respuesta Demanda</option>
-                    <option value="Audiencia Agendada">Audiencia Agendada</option>
-                    <option value="Audiencia Realizada">Audiencia Realizada</option>
-                    <option value="Sentencia Emitida">Sentencia Emitida</option>
-                    <option value="Recurso Presentado">Recurso Presentado</option>
-                    <option value="Medida Cautelar Decretada">Medida Cautelar Decretada</option>
-                    <option value="Embargo Realizado">Embargo Realizado</option>
-                    <option value="Remate Realizado">Remate Realizado</option>
-                    <option value="Pago Recibido">Pago Recibido</option>
-                    <option value="Caso Archivado">Caso Archivado</option>
-                </select>
-            </div>
-            <div>
-                <label>Fecha de la Actividad:</label>
-                <input type="date" value={activityDate} onChange={(e) => setActivityDate(e.target.value)} required />
-            </div>
-            <div>
-                <label>Descripción Breve:</label>
-                <input type="text" value={description} onChange={(e) => setDescription(e.target.value)} required />
-            </div>
-            <div>
-                <label>Próximo Paso / Tarea:</label>
-                <input type="text" value={nextStep} onChange={(e) => setNextStep(e.target.value)} />
-            </div>
-            <div>
-                <label>Fecha Límite Próximo Paso:</label>
-                <input type="date" value={deadline} onChange={(e) => setDeadline(e.target.value)} />
-            </div>
-            <div>
-                <label>Adjuntar Documento Relacionado:</label>
-                <input type="file" onChange={(e) => setDocument(e.target.files?.[0] ?? null)} />
-            </div>
-            <button type="submit">Registrar Actividad</button>
+            <Grid container spacing={2}>
+                <Grid item xs={12} sm={6}>
+                    <TextField
+                        label="Tipo de Actuación"
+                        select
+                        value={type}
+                        onChange={e => setType(e.target.value as ActivityType)}
+                        fullWidth
+                        required
+                    >
+                        {ACTIVITY_TYPES.map(activityType => (
+                            <MenuItem key={activityType} value={activityType}>
+                                {activityType}
+                            </MenuItem>
+                        ))}
+                    </TextField>
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                    <TextField
+                        label="Fecha de la Actuación"
+                        type="date"
+                        value={date}
+                        onChange={e => setDate(e.target.value)}
+                        fullWidth
+                        required
+                        InputLabelProps={{ shrink: true }}
+                    />
+                </Grid>
+                <Grid item xs={12}>
+                    <TextField
+                        label="Descripción Breve"
+                        value={description}
+                        onChange={e => setDescription(e.target.value)}
+                        fullWidth
+                        required
+                    />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                    <TextField
+                        label="Próximo Paso / Tarea"
+                        value={nextStep}
+                        onChange={e => setNextStep(e.target.value)}
+                        fullWidth
+                    />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                    <TextField
+                        label="Fecha Límite Próximo Paso"
+                        type="date"
+                        value={deadline}
+                        onChange={e => setDeadline(e.target.value)}
+                        fullWidth
+                        InputLabelProps={{ shrink: true }}
+                    />
+                </Grid>
+                <Grid item xs={12}>
+                    <Button variant="outlined" component="label">
+                        {document ? document.name : 'Adjuntar Documento Relacionado'}
+                        <input
+                            type="file"
+                            hidden
+                            onChange={e => setDocument(e.target.files?.[0] ?? null)}
+                        />
+                    </Button>
+                </Grid>
+                <Grid item xs={12}>
+                    <Button type="submit" variant="contained" disabled={submitting}>
+                        {submitting ? 'Registrando…' : 'Registrar Actuación'}
+                    </Button>
+                </Grid>
+            </Grid>
         </form>
     );
 };

@@ -12,7 +12,6 @@ import CaseList from './modules/cases/CaseList';
 import CaseDetail from './modules/cases/CaseDetail';
 import CaseForm from './modules/cases/CaseForm';
 import DemandGenerator from './modules/demands/DemandGenerator';
-import ActivityHistory from './modules/tracking/ActivityHistory';
 import Dashboard from './modules/reports/Dashboard';
 
 const App = () => {
@@ -30,7 +29,6 @@ const App = () => {
                                 <ProtectedRoute path="/cases/new" component={CaseForm} />
                                 <ProtectedRoute path="/cases/:id" component={CaseDetail} />
                                 <ProtectedRoute path="/demands/:caseId?" component={DemandGenerator} />
-                                <ProtectedRoute path="/tracking/:id" component={ActivityHistory} />
                             </Switch>
                         </Layout>
                     </Router>
